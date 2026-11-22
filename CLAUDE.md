@@ -2,7 +2,7 @@
 
 ## Rules
 - **Never commit or push without the user's explicit permission.**
-- **Before any commit, check for leaked API keys and authentication credentials.** This covers Twilio SID/token/from-number, `backend/.env`, `backend/.env.example`, `backend/*.db`, signing keys/keystores, and `local.properties`. Never put secret values in code, docs, or logs.
+- **Before any commit, check for leaked API keys and authentication credentials.** This covers Twilio SID/token/from-number, `backend/.env`, `backend/*.db`, signing keys/keystores, and `local.properties`. Never put secret values in code, docs, or logs. `backend/.env.example` is tracked and must contain placeholders only.
 
 ## Overview
 Billy is an Android app (Kotlin, Jetpack Compose) for billing / bill splitting. So far it has phone-number sign-in and user profiles. After first sign-in the user creates a profile (first name, optional last name, optional photo, city + state auto-detected with manual override, optional bio); after that the app shows a placeholder home screen with the profile and an Edit profile button.
@@ -76,7 +76,6 @@ Debug builds point `API_BASE_URL` at `http://10.0.2.2:3000/api` (the host machin
 
 ## Known gaps
 - Release host values are still placeholders (`billy.example.com`).
-- `backend/.env.example` holds real credentials locally, so it must stay gitignored. Never commit it or copy its values anywhere. It is also missing `TWILIO_MESSAGING_SERVICE_SID`.
 - The app never calls `/auth/session` or `/auth/logout`. `signOut` only clears local storage. An expired session is noticed when `/profile` returns 401.
 - Profile photos aren't moderated, and they're stored as SQLite BLOBs (fine at current scale).
 - Test coverage: view-model unit tests (`ProfileSetupViewModelTest`, `ProfileGateViewModelTest`/`LoginScreenViewModelTest`, which use the fakes in `Fakes.kt`), `PhoneNumbersTest`, the instrumented `KeystoreTokenStoreTest`, and the backend tests. The HTTP repositories and the UI are untested. `ExampleUnitTest` and `ExampleInstrumentedTest` are template stubs.

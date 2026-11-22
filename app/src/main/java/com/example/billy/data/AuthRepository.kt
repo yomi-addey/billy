@@ -1,12 +1,6 @@
 package com.example.billy.data
 
-import android.content.Context
-import com.example.billy.BuildConfig
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
 
 /**
  * Backend contract (the server holds the SMS provider keys, e.g. Twilio):
@@ -20,52 +14,29 @@ import java.net.URL
 interface AuthRepository {
     suspend fun requestSignInLink(e164Phone: String): Result<Unit>
     suspend fun completeSignIn(token: String): Result<Unit>
-    fun isSignedIn(): Boolean
-    fun signOut()
+    suspend fun isSignedIn(): Boolean
+    /** The session token for authenticated calls, or null when signed out. */
+    suspend fun sessionToken(): String?
+    suspend fun signOut()
 }
 
-class HttpAuthRepository(context: Context) : AuthRepository {
-    private val prefs = context.applicationContext
-        .getSharedPreferences("auth", Context.MODE_PRIVATE)
+class HttpAuthRepository(private val tokens: TokenStore) : AuthRepository {
 
-    override suspend fun requestSignInLink(e164Phone: String): Result<Unit> =
-        post("/auth/sms-link", JSONObject().put("phone", e164Phone)).map { }
-
-    override suspend fun completeSignIn(token: String): Result<Unit> =
-        post("/auth/verify", JSONObject().put("token", token)).mapCatching { body ->
-            val session = JSONObject(body).getString("sessionToken")
-            prefs.edit().putString(KEY_SESSION, session).apply()
-        }
-
-    override fun isSignedIn() = prefs.getString(KEY_SESSION, null) != null
-
-    override fun signOut() {
-        prefs.edit().remove(KEY_SESSION).apply()
+    override suspend fun requestSignInLink(e164Phone: String): Result<Unit> = runCatching {
+        postJson("/auth/sms-link", JSONObject().put("phone", e164Phone))
     }
 
-    private suspend fun post(path: String, json: JSONObject): Result<String> =
-        withContext(Dispatchers.IO) {
-            runCatching {
-                val conn = URL(BuildConfig.API_BASE_URL + path).openConnection() as HttpURLConnection
-                try {
-                    conn.requestMethod = "POST"
-                    conn.connectTimeout = 10_000
-                    conn.readTimeout = 10_000
-                    conn.doOutput = true
-                    conn.setRequestProperty("Content-Type", "application/json")
-                    conn.outputStream.use { it.write(json.toString().toByteArray()) }
-                    val code = conn.responseCode
-                    if (code !in 200..299) throw AuthException(code)
-                    if (code == 204) "" else conn.inputStream.bufferedReader().use { it.readText() }
-                } finally {
-                    conn.disconnect()
-                }
-            }
-        }
-
-    private companion object {
-        const val KEY_SESSION = "session_token"
+    override suspend fun completeSignIn(token: String): Result<Unit> = runCatching {
+        val body = postJson("/auth/verify", JSONObject().put("token", token))
+        tokens.set(JSONObject(body.decodeToString()).getString("sessionToken"))
     }
+
+    override suspend fun isSignedIn() = tokens.get() != null
+
+    override suspend fun sessionToken() = tokens.get()
+
+    override suspend fun signOut() = tokens.clear()
+
+    private suspend fun postJson(path: String, json: JSONObject) =
+        httpRequest("POST", path, json.toString().toByteArray())
 }
-
-class AuthException(val httpCode: Int) : Exception("HTTP $httpCode")

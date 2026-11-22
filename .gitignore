@@ -101,3 +101,10 @@ Temporary Items
 *.icloud
 
 # End of https://www.toptal.com/developers/gitignore/api/android,macos,kotlin
+
+# Backend
+backend/node_modules/
+backend/.env
+backend/*.db
+backend/*.db-*
+backend/.env.example

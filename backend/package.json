@@ -1,0 +1,12 @@
+{
+  "name": "billy-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Phone-number sign-in (SMS one-time link) and session backend for Billy",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/index.js",
+    "test": "node --test test/*.test.js"
+  }
+}

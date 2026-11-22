@@ -24,14 +24,24 @@ data class LoginUiState(
     val isVerifying: Boolean = false,
     val error: String? = null,
     val isSignedIn: Boolean = false,
+    /** True until the stored session has been read (it's encrypted, so this is async). */
+    val isCheckingSession: Boolean = false,
 ) {
     val phoneValid get() = PhoneNumbers.isValid(country.dialCode, phone)
     val showPhoneError get() = phoneTouched && !phoneValid
 }
 
 class LoginScreenViewModel(private val auth: AuthRepository) : ViewModel() {
-    private val _state = MutableStateFlow(LoginUiState(isSignedIn = auth.isSignedIn()))
+    private val _state = MutableStateFlow(LoginUiState(isCheckingSession = true))
     val state: StateFlow<LoginUiState> = _state.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val signedIn = auth.isSignedIn()
+            // A sign-in link may have completed while we were reading storage; don't undo it.
+            _state.update { it.copy(isCheckingSession = false, isSignedIn = it.isSignedIn || signedIn) }
+        }
+    }
 
     private var lastHandledToken: String? = null
 
@@ -75,9 +85,10 @@ class LoginScreenViewModel(private val auth: AuthRepository) : ViewModel() {
         }
     }
 
-    fun signOut() {
-        auth.signOut()
-        _state.value = LoginUiState()
+    /** [message] is shown on the login screen, e.g. when the session expired. */
+    fun signOut(message: String? = null) {
+        _state.value = LoginUiState(error = message)
+        viewModelScope.launch { auth.signOut() }
     }
 
     class Factory(private val auth: AuthRepository) : ViewModelProvider.Factory {

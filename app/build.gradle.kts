@@ -25,6 +25,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Local backend (`cd backend && npm start`) as seen from the emulator. Cleartext is allowed
+            // only for 10.0.2.2, and only in debug builds (src/debug/res/xml/network_security_config.xml).
+            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000/api\"")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -55,7 +60,9 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui.text.google.fonts)
+    implementation(libs.androidx.datastore.preferences)
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

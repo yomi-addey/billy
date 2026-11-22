@@ -80,4 +80,3 @@ Debug builds point `API_BASE_URL` at `http://10.0.2.2:3000/api` (the host machin
 - Profile photos aren't moderated, and they're stored as SQLite BLOBs (fine at current scale).
 - Test coverage: view-model unit tests (`ProfileSetupViewModelTest`, `ProfileGateViewModelTest`/`LoginScreenViewModelTest`, which use the fakes in `Fakes.kt`), `PhoneNumbersTest`, the instrumented `KeystoreTokenStoreTest`, and the backend tests. The HTTP repositories and the UI are untested. `ExampleUnitTest` and `ExampleInstrumentedTest` are template stubs.
 - No lint/format tooling (ktlint, detekt) and no CI.
-- `README.md` is empty.
